@@ -1,32 +1,54 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
-  Button,
   Alert,
-  SafeAreaView
+  SafeAreaView,
+  ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { supabase } from '../../src/lib/supabase';
 import { useFocusEffect } from '@react-navigation/native';
+import type { Booking } from '../../src/types';
+
+function formatDate(dateString: string): string {
+  return new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(dateString + 'T00:00:00'));
+}
 
 export default function BookingsScreen() {
-
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<number | null>(null);
 
   async function getBookings() {
-    const { data } = await supabase.auth.getSession();
-    const user = data.session?.user;
+    setLoading(true);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData.session?.user;
 
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-    const { data: bookingsData } = await supabase
+    const { data, error } = await supabase
       .from('bookings')
       .select('*, days(*)')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
-    if (bookingsData) setBookings(bookingsData);
+    if (error) {
+      Alert.alert('Error', 'No se pudieron cargar las reservas');
+    } else {
+      setBookings(data || []);
+    }
+    setLoading(false);
   }
 
   useFocusEffect(
@@ -35,59 +57,63 @@ export default function BookingsScreen() {
     }, [])
   );
 
-  function confirmCancel(item: any) {
-    Alert.alert('Cancelar reserva', '¿Seguro?', [
-      { text: 'No' },
-      {
-        text: 'Sí',
-        onPress: () => cancelBooking(item),
-      },
+  function confirmCancel(item: Booking) {
+    Alert.alert('Cancelar reserva', '¿Seguro que quieres cancelar este día?', [
+      { text: 'No', style: 'cancel' },
+      { text: 'Sí', style: 'destructive', onPress: () => cancelBooking(item) },
     ]);
   }
 
-  // ✅ CANCELAR
-  async function cancelBooking(item: any) {
+  async function cancelBooking(item: Booking) {
+    setProcessingId(item.id);
 
-    // ✅ BORRAR RESERVA
-    await supabase
+    const { error: deleteError } = await supabase
       .from('bookings')
       .delete()
       .eq('id', item.id);
 
-    // ✅ TRAER PLAN ACTUAL
-    const { data: planActual } = await supabase
+    if (deleteError) {
+      setProcessingId(null);
+      Alert.alert('Error', 'No se pudo cancelar la reserva');
+      return;
+    }
+
+    const { data: planActual, error: planFetchError } = await supabase
       .from('user_plans')
       .select('remaining_days')
       .eq('id', item.user_plan_id)
       .single();
 
-    const newRemaining = planActual?.remaining_days + 1;
+    if (!planFetchError && planActual) {
+      const newRemaining = planActual.remaining_days + 1;
+      await supabase
+        .from('user_plans')
+        .update({ remaining_days: newRemaining, status: 'activo' })
+        .eq('id', item.user_plan_id);
+    }
 
-    // ✅ ACTUALIZAR PLAN (REACTIVAR SI APLICA)
-    await supabase
-      .from('user_plans')
-      .update({
-        remaining_days: newRemaining,
-        status: newRemaining > 0 ? 'activo' : 'inactivo',
-      })
-      .eq('id', item.user_plan_id);
+    if (item.days) {
+      await supabase
+        .from('days')
+        .update({ reserved_count: Math.max(0, (item.days.reserved_count ?? 1) - 1) })
+        .eq('id', item.day_id);
+    }
 
-    // ✅ ACTUALIZAR DÍA
-    await supabase
-      .from('days')
-      .update({
-        reserved_count: item.days?.reserved_count - 1,
-      })
-      .eq('id', item.day_id);
+    setProcessingId(null);
+    setBookings((prev) => prev.filter((b) => b.id !== item.id));
+  }
 
-    getBookings();
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+      </SafeAreaView>
+    );
   }
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-
-        {/* 🔥 HEADER COMO HOME */}
         <View style={styles.header}>
           <Text style={styles.title}>Mis reservas</Text>
         </View>
@@ -99,65 +125,52 @@ export default function BookingsScreen() {
         <FlatList
           data={bookings}
           keyExtractor={(item) => item.id?.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={styles.text}>
-                Fecha: {item.days?.date}
-              </Text>
-
-              <Button
-                title="Cancelar"
-                color="red"
-                onPress={() => confirmCancel(item)}
-              />
-            </View>
-          )}
+          renderItem={({ item }) => {
+            const isProcessing = processingId === item.id;
+            return (
+              <View style={styles.card}>
+                <Text style={styles.dateText}>
+                  {item.days?.date ? formatDate(item.days.date) : 'Fecha no disponible'}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.cancelButton, isProcessing && styles.buttonDisabled]}
+                  onPress={() => confirmCancel(item)}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.cancelText}>Cancelar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            );
+          }}
         />
-
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-
-  safe: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-
-  // 🔥 NUEVO HEADER
-  header: {
-    alignItems: 'center',
-    marginTop: 30,
-    marginBottom: 20,
-  },
-
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-
-  empty: {
-    textAlign: 'center',
-    color: '#555',
-    marginBottom: 15,
-  },
-
+  safe: { flex: 1, backgroundColor: '#f2f4f8' },
+  container: { flex: 1, padding: 20 },
+  header: { marginBottom: 15 },
+  title: { fontSize: 22, fontWeight: 'bold' },
+  empty: { textAlign: 'center', color: '#888', marginTop: 40 },
   card: {
-    padding: 12,
-    backgroundColor: '#eee',
-    marginBottom: 10,
+    backgroundColor: '#fff',
+    padding: 15,
     borderRadius: 10,
+    marginBottom: 10,
   },
-
-  text: {
-    fontSize: 16,
-    marginBottom: 5,
+  dateText: { fontSize: 15, fontWeight: '600', marginBottom: 8, textTransform: 'capitalize' },
+  cancelButton: {
+    backgroundColor: '#e74c3c',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
   },
+  buttonDisabled: { backgroundColor: '#aaa' },
+  cancelText: { color: '#fff', fontWeight: '600' },
 });

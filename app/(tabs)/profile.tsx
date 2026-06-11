@@ -1,57 +1,52 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  Button,
-  StyleSheet,
-  SafeAreaView
+    ActivityIndicator,
+    Button,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 import { supabase } from '../../src/lib/supabase';
-import { useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
 
   const [user, setUser] = useState<any>(null);
-  const [fullName, setFullName] = useState<string>(''); // ✅ NUEVO
+  const [fullName, setFullName] = useState<string>('');
   const [userPlan, setUserPlan] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const router = useRouter();
 
-  // ✅ CARGAR USUARIO
   useEffect(() => {
     getUser();
   }, []);
 
   async function getUser() {
+    setLoading(true);
     const { data } = await supabase.auth.getSession();
     const sessionUser = data.session?.user;
 
     if (sessionUser) {
       setUser(sessionUser);
-
-      // ✅ FIX TypeScript
-      if (sessionUser.email) {
-        getUserProfile(sessionUser.email);
-      }
-
-      getUserPlan(sessionUser.id);
+      await Promise.all([
+        sessionUser.email ? getUserProfile(sessionUser.email) : Promise.resolve(),
+        getUserPlan(sessionUser.id),
+      ]);
     }
+    setLoading(false);
   }
 
-  // ✅ TRAER PERFIL
   async function getUserProfile(email: string) {
-
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
-      .select('*');
+      .select('full_name')
+      .eq('email', email)
+      .maybeSingle();
 
-    const profile = data?.find(
-      (p) =>
-        p.email?.trim().toLowerCase() === email.trim().toLowerCase()
-    );
-
-    if (profile) {
-      setFullName(profile.full_name);
+    if (!error && data) {
+      setFullName(data.full_name);
     }
   }
 
@@ -77,10 +72,17 @@ export default function ProfileScreen() {
     }
   }
 
-  // ✅ LOGOUT
   async function logout() {
     await supabase.auth.signOut();
     router.replace('/login');
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+      </SafeAreaView>
+    );
   }
 
   return (

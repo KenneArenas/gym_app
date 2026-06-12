@@ -31,6 +31,7 @@ export interface Booking {
   user_id: string;
   day_id: number;
   user_plan_id: number;
+  status?: 'confirmada' | 'cancelada' | 'asistio' | 'no_asistio';
   created_at?: string;
   days?: Day;
 }
@@ -40,4 +41,18 @@ export interface Profile {
   email: string;
   full_name: string;
   role: 'admin' | 'cliente';
+  phone?: string;
+  avatar_url?: string;
+  is_approved: boolean;
+  push_token?: string;
+}
+
+export interface Solicitud {
+  id: number;
+  full_name: string;
+  email: string;
+  phone?: string;
+  document?: string;
+  status: 'pendiente' | 'aprobada' | 'rechazada';
+  created_at: string;
 }

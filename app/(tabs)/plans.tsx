@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
-  ActivityIndicator,
-  TouchableOpacity,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../src/lib/supabase';
 import type { Plan } from '../../src/types';
 
@@ -47,7 +47,8 @@ export default function PlansScreen() {
       .from('user_plans')
       .select('id')
       .eq('user_id', user.id)
-      .eq('status', 'activo');
+      .eq('status', 'activo')
+      .gt('remaining_days', 0);
 
     if (fetchError) {
       setProcessingPlanId(null);

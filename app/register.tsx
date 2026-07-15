@@ -11,6 +11,7 @@ import {
     TextInput,
     TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors, type AppColors } from '../hooks/use-app-colors';
 import { supabase } from '../src/lib/supabase';
 
@@ -102,88 +103,91 @@ export default function RegistroScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Solicitud de acceso</Text>
-        <Text style={styles.subtitle}>
-          Completa el formulario y el administrador aprobará tu acceso
-        </Text>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <Text style={styles.title}>Solicitud de acceso</Text>
+          <Text style={styles.subtitle}>
+            Completa el formulario y el administrador aprobará tu acceso
+          </Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Nombre completo *"
-          value={fullName}
-          onChangeText={setFullName}
-          autoCapitalize="words"
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Nombre completo *"
+            value={fullName}
+            onChangeText={setFullName}
+            autoCapitalize="words"
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Correo electrónico *"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          autoComplete="email"
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Correo electrónico *"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Teléfono"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Teléfono"
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Número de documento (cédula)"
-          value={document}
-          onChangeText={setDocument}
-          keyboardType="numeric"
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Número de documento (cédula)"
+            value={document}
+            onChangeText={setDocument}
+            keyboardType="numeric"
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña * (mín. 6 caracteres)"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Contraseña * (mín. 6 caracteres)"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Confirmar contraseña *"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Confirmar contraseña *"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+          />
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={register}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Enviar solicitud</Text>
-          )}
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={register}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Enviar solicitud</Text>
+            )}
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backText}>¿Ya tienes cuenta? Iniciar sesión</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backText}>¿Ya tienes cuenta? Iniciar sesión</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 function createStyles(c: AppColors) {
   return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
     container: { flex: 1, backgroundColor: c.bg },
     scroll: { padding: 24, paddingBottom: 40 },
     title: {

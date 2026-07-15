@@ -6,13 +6,13 @@ import {
     FlatList,
     Image,
     Modal,
-    SafeAreaView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors, type AppColors } from '../../hooks/use-app-colors';
 import { notifyUser } from '../../src/lib/notifications';
 import { supabase } from '../../src/lib/supabase';
@@ -98,7 +98,9 @@ export default function PaymentsScreen() {
             if (item.user_plan_id) {
               await supabase
                 .from('user_plans')
-                .update({ status: 'activo' })
+                .update({
+                  status: (item.user_plans?.remaining_days ?? 0) > 0 ? 'activo' : 'inactivo',
+                })
                 .eq('id', item.user_plan_id);
             }
 
@@ -106,11 +108,18 @@ export default function PaymentsScreen() {
             await notifyUser(
               item.user_id,
               '¡Pago aprobado! 💪',
-              'Tu comprobante fue aprobado y tu plan está activo. ¡A entrenar!',
+              (item.user_plans?.remaining_days ?? 0) > 0
+                ? 'Tu comprobante fue aprobado y tu plan está activo. ¡A entrenar!'
+                : 'Tu comprobante fue aprobado, pero ese plan ya no tiene días disponibles.',
             );
 
             setProcessingId(null);
-            Alert.alert('Aprobado', 'El pago fue aprobado y el plan está activo');
+            Alert.alert(
+              'Aprobado',
+              (item.user_plans?.remaining_days ?? 0) > 0
+                ? 'El pago fue aprobado y el plan está activo'
+                : 'El pago fue aprobado, pero el plan ya estaba agotado',
+            );
             loadPayments();
           },
         },

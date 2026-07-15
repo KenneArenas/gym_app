@@ -1,16 +1,16 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors, type AppColors } from '../../hooks/use-app-colors';
 import { formatDateLong, todayBogota } from '../../src/lib/dates';
 import { supabase } from '../../src/lib/supabase';
@@ -70,6 +70,7 @@ export default function HomeScreen() {
       .select(`*, plans(name)`)
       .eq('user_id', user.id)
       .eq('status', 'activo')
+      .gt('remaining_days', 0)
       .order('created_at', { ascending: false })
       .limit(1);
     if (error) { Alert.alert('Error', 'No se pudo cargar el plan'); return; }
@@ -188,9 +189,7 @@ export default function HomeScreen() {
           <View style={styles.planCard}>
             <Text style={styles.planName}>{userPlan.plans?.name}</Text>
             <Text style={styles.planDays}>
-              {userPlan.remaining_days > 0
-                ? `${userPlan.remaining_days} día${userPlan.remaining_days !== 1 ? 's' : ''} restante${userPlan.remaining_days !== 1 ? 's' : ''}`
-                : 'Plan agotado'}
+              {`${userPlan.remaining_days} día${userPlan.remaining_days !== 1 ? 's' : ''} restante${userPlan.remaining_days !== 1 ? 's' : ''}`}
             </Text>
           </View>
         ) : (

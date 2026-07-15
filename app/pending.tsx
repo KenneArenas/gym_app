@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors, type AppColors } from '../hooks/use-app-colors';
 import { supabase } from '../src/lib/supabase';
 
@@ -14,7 +15,7 @@ export default function PendienteScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <Text style={styles.icon}>⏳</Text>
       <Text style={styles.title}>Solicitud en revisión</Text>
       <Text style={styles.message}>
@@ -25,7 +26,7 @@ export default function PendienteScreen() {
       <TouchableOpacity style={styles.button} onPress={logout}>
         <Text style={styles.buttonText}>Cerrar sesión</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 

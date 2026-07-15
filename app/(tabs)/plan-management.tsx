@@ -5,7 +5,6 @@ import {
     Alert,
     FlatList,
     Modal,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Switch,
@@ -14,6 +13,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors, type AppColors } from '../../hooks/use-app-colors';
 import { supabase } from '../../src/lib/supabase';
 
@@ -197,7 +197,8 @@ export default function PlanManagementScreen() {
       .from('user_plans')
       .select('id')
       .eq('user_id', selectedClient.id)
-      .eq('status', 'activo');
+      .eq('status', 'activo')
+      .gt('remaining_days', 0);
 
     if ((active?.length ?? 0) > 0) {
       setAssigning(false);

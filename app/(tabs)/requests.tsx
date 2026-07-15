@@ -4,12 +4,12 @@ import {
     ActivityIndicator,
     Alert,
     FlatList,
-    SafeAreaView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors, type AppColors } from '../../hooks/use-app-colors';
 import { formatDateTime } from '../../src/lib/dates';
 import { notifyUserByEmail } from '../../src/lib/notifications';

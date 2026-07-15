@@ -3,18 +3,18 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Modal,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors, type AppColors } from '../../hooks/use-app-colors';
 import { supabase } from '../../src/lib/supabase';
 
@@ -81,7 +81,9 @@ export default function ProfileScreen() {
       .order('created_at', { ascending: false });
 
     if (plans && plans.length > 0) {
-      const active = plans.find((p: UserPlanWithPlan) => p.status === 'activo');
+      const active = plans.find(
+        (p: UserPlanWithPlan) => p.status === 'activo' && p.remaining_days > 0
+      );
       setUserPlan(active ?? null);
       setPlanHistory(plans);
     }
